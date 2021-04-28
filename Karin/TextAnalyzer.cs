@@ -364,13 +364,12 @@ namespace Karin
             else if (c == '[') {
                 //呼び出し
                 position++;
-                var name = sb.ToString();
                 var args = _ANA_Function_ReadArgs();
                 return new FunctionToken(fname, line, fname, args, isPipe);
             }
             else {
                 //引数省略呼び出し
-                return new FunctionToken(fname, line, fname, null, isPipe);
+                return new FunctionToken(fname, line, fname, new List<List<Token>>(), isPipe);
             }
         }
         
@@ -431,12 +430,18 @@ namespace Karin
             return args;
         }
 
-
-
+        
         /// <summary>
         /// 逆ポーランド記法変換
         /// </summary>
         public void ToReversPolishNotation() {
+            this.tokens = ToReversPolishNotation(tokens);
+        }
+        
+        /// <summary>
+        /// 逆ポーランド記法変換
+        /// </summary>
+        private List<Token> ToReversPolishNotation(List<Token> tokens) {
             var ret = new List<Token>(tokens.Count);  //結果格納
             var opeStack = new Stack<Token>();        //演算子スタック
 
@@ -478,10 +483,26 @@ namespace Karin
                 } else {
                     //要素はその他の項目
                     ret.Add(token);
+
+                    if(token.Type == TokenType.Function) {
+                        var t = token as FunctionToken;
+                        for(int i=0; i<t.Arguments.Count; i++){
+                            t.Arguments[i] = ToReversPolishNotation(t.Arguments[i]);
+                        }
+                    }
+
+                    if(token.Type == TokenType.ScriptFunction) {
+                        var t = token as ScriptFunctionToken;
+                        t.SubTokens = ToReversPolishNotation(t.SubTokens);
+                    }
+                    
+                    if(token.Type == TokenType.Subscript) {
+                        var t = token as ScriptBlockToken;
+                        t.SubTokens = ToReversPolishNotation(t.SubTokens);
+                    }
                 }
             }
-
-            this.tokens = ret;
+            return ret;
         }
 
     }
