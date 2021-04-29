@@ -37,16 +37,26 @@ if[$a==1, {
 }]
 
 ";
+
+        code = @"
+    $a = 2+3+4
+    $b = $a*2
+    $b
+";
             try {
                 var ana = new Karin.TextAnalyzer(code, "main");
                 ana.Analyze();
-                ana.ToReversPolishNotation();
+                ana.ToRPN();
                 var tokens = ana.Tokens;
+
 
                 foreach (var t in tokens) {
                     Console.WriteLine(t.ToString());
                 }
-            }catch(KarinException ex) {
+
+                Console.WriteLine(new KarinEngine().Execute(code));
+
+            } catch(KarinException ex) {
                 Console.WriteLine($"{ex.Message}/{ex.ScriptStackTrace}");
             }
 

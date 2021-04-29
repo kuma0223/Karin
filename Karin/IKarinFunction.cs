@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Karin
 {
@@ -10,33 +11,36 @@ namespace Karin
         /// <summary>
         /// 関数名を取得します。
         /// </summary>
-        string name { get; }
-        
+        string Name { get; }
+
         /// <summary>
         /// 関数を呼び出し結果を返します。
         /// </summary>
         /// <param name="args">引数</param>
         /// <returns>結果値</returns>
-        object execute(object[] args);
-    }
-    
-    /// <summary>
-    /// 制御構文関数インタフェース
-    /// </summary>
-    public interface IKarinControlFunction : IKarinFunction
-    {
-        /// <summary>
-        /// 実行元エンジン
-        /// </summary>
-        Karin Engine { get; set; }
+        object Execute(object[] args);
     }
 
     /// <summary>
-    /// 関数名と実装式を指定してIKarinFunctionを実装したインスタンスを生成します。
+    /// 制御構文関数インタフェース
+    /// </summary>
+    interface IKarinSyntaxFunction : IKarinFunction
+    {
+        /// <summary>
+        /// 関数を呼び出し結果を返します。
+        /// </summary>
+        /// <param name="karin">実行エンジン</param>
+        /// <param name="args">引数</param>
+        /// <returns>結果値</returns>
+        object Execute(KarinEngine karin, object[] args);
+    }
+
+    /// <summary>
+    /// 簡易IKarinFunction実装クラス
     /// </summary>
     public class KarinFunction : IKarinFunction
     {
-        public string name { private set; get; }
+        public string Name { private set; get; }
         private Func<object[], object> logic;
 
         /// <summary>
@@ -46,14 +50,16 @@ namespace Karin
         /// <param name="logic">関数実装</param>
         public KarinFunction(string name, Func<object[], object> logic)
         {
-            this.name = name;
+            this.Name = name;
             this.logic = logic;
         }
 
         /// <summary>
-        /// 関数を実行します。
+        /// 関数を呼び出し結果を返します。
         /// </summary>
-        public object execute(object[] args)
+        /// <param name="args">引数</param>
+        /// <returns>結果値</returns>
+        public object Execute(object[] args)
         {
             return logic(args);
         }
@@ -64,14 +70,15 @@ namespace Karin
     /// </summary>
     class ScriptFunction : IKarinFunction
     {
-        public string name { private set; get; }
-        public string script { private set; get; }
+        public string Name { private set; get; }
+        public List<Token> Tokens { private set; get; }
 
-        public ScriptFunction(string name, string script)
+        public ScriptFunction(string name, List<Token> tokens)
         {
-            this.name = name; this.script = script;
+            this.Name = name;
+            this.Tokens = tokens;
         }
-        public object execute(object[] args)
+        public object Execute(object[] args)
         {
             throw new KarinException("Mostn't call script function direct");
         }

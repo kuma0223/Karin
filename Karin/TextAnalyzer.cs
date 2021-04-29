@@ -42,6 +42,10 @@ namespace Karin
                     throw new KarinException("不明なトークンの出現です。", line, BlockName);
                 }
             }
+
+            if(tokens.Any() && tokens.Last().Type != TokenType.End) {
+                tokens.Add(new Token(TokenType.End, "", line));
+            }
         }
 
         //--------------------
@@ -429,19 +433,18 @@ namespace Karin
             }
             return args;
         }
-
         
         /// <summary>
         /// 逆ポーランド記法変換
         /// </summary>
-        public void ToReversPolishNotation() {
-            this.tokens = ToReversPolishNotation(tokens);
+        public void ToRPN() {
+            this.tokens = ToRPN(tokens);
         }
-        
+
         /// <summary>
         /// 逆ポーランド記法変換
         /// </summary>
-        private List<Token> ToReversPolishNotation(List<Token> tokens) {
+        private List<Token> ToRPN(List<Token> tokens) {
             var ret = new List<Token>(tokens.Count);  //結果格納
             var opeStack = new Stack<Token>();        //演算子スタック
 
@@ -480,6 +483,7 @@ namespace Karin
                     while (opeStack.Count > 0) {
                         ret.Add(opeStack.Pop());
                     }
+                    ret.Add(token);
                 } else {
                     //要素はその他の項目
                     ret.Add(token);
@@ -487,18 +491,14 @@ namespace Karin
                     if(token.Type == TokenType.Function) {
                         var t = token as FunctionToken;
                         for(int i=0; i<t.Arguments.Count; i++){
-                            t.Arguments[i] = ToReversPolishNotation(t.Arguments[i]);
+                            t.Arguments[i] = ToRPN(t.Arguments[i]);
                         }
-                    }
-
-                    if(token.Type == TokenType.ScriptFunction) {
+                    }else if(token.Type == TokenType.ScriptFunction) {
                         var t = token as ScriptFunctionToken;
-                        t.SubTokens = ToReversPolishNotation(t.SubTokens);
-                    }
-                    
-                    if(token.Type == TokenType.Subscript) {
+                        t.SubTokens = ToRPN(t.SubTokens);
+                    } else if (token.Type == TokenType.Subscript) {
                         var t = token as ScriptBlockToken;
-                        t.SubTokens = ToReversPolishNotation(t.SubTokens);
+                        t.SubTokens = ToRPN(t.SubTokens);
                     }
                 }
             }

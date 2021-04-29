@@ -15,23 +15,23 @@ namespace Karin
         private static HashSet<char> MarkSet = new HashSet<char>(Marks);
 
         public static Operator[] Operators = {
-            new Operator(){ Mark="*",  Priority=5, Function=PresetFunctions.mul.name},
-            new Operator(){ Mark="/",  Priority=5, Function=PresetFunctions.div.name},
-            new Operator(){ Mark="%",  Priority=5, Function=PresetFunctions.mod.name},
-            new Operator(){ Mark="+",  Priority=4, Function=PresetFunctions.add.name},
-            new Operator(){ Mark="-",  Priority=4, Function=PresetFunctions.sub.name},
+            new Operator(){ Mark="*",  Priority=5, Function="MUL"},
+            new Operator(){ Mark="/",  Priority=5, Function="DIV"},
+            new Operator(){ Mark="%",  Priority=5, Function="MOD"},
+            new Operator(){ Mark="+",  Priority=4, Function="ADD"},
+            new Operator(){ Mark="-",  Priority=4, Function="SUB"},
 
-            new Operator(){ Mark="&",  Priority=3, Function=PresetFunctions.cat.name},
+            new Operator(){ Mark="&",  Priority=3, Function="CAT"},
 
-            new Operator(){ Mark=">",  Priority=2, Function=PresetFunctions.over.name},
-            new Operator(){ Mark=">=", Priority=2, Function=PresetFunctions.eover.name},
-            new Operator(){ Mark="<",  Priority=2, Function=PresetFunctions.under.name},
-            new Operator(){ Mark="<=", Priority=2, Function=PresetFunctions.eunder.name},
-            new Operator(){ Mark="==", Priority=1, Function=PresetFunctions.equal.name},
-            new Operator(){ Mark="!=", Priority=1, Function=PresetFunctions.nequal.name},
+            new Operator(){ Mark=">",  Priority=2, Function="OVER"},
+            new Operator(){ Mark=">=", Priority=2, Function="EOVER"},
+            new Operator(){ Mark="<",  Priority=2, Function="UNDER"},
+            new Operator(){ Mark="<=", Priority=2, Function="EUNDER"},
+            new Operator(){ Mark="==", Priority=1, Function="EQUAL"},
+            new Operator(){ Mark="!=", Priority=1, Function="NEQUAL"},
 
-            new Operator(){ Mark="&&", Priority=0, Function=PresetFunctions.and.name},
-            new Operator(){ Mark="||", Priority=0, Function=PresetFunctions.or.name},
+            new Operator(){ Mark="&&", Priority=0, Function="AND"},
+            new Operator(){ Mark="||", Priority=0, Function="OR"},
                                                  
             new Operator(){ Mark="=", Priority=-1},
 
