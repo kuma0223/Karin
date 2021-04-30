@@ -21,7 +21,7 @@ namespace Karin
         }
         public override string ToString()
         {
-            return $"[{Type}]{Text}";
+            return $"({Line})[{Type}]{Text}";
         }
     }
 
@@ -35,7 +35,7 @@ namespace Karin
         RParen,
         Variable,
         ScriptFunction,
-        Subscript,
+        ScriptBlockToken,
         End,
         Other,
     }
@@ -132,7 +132,7 @@ namespace Karin
         public List<Token> SubTokens;
 
         public ScriptBlockToken(string text, int line, List<Token> subTokens)
-            : base(TokenType.Subscript, text, line)
+            : base(TokenType.ScriptBlockToken, text, line)
         {
             this.SubTokens = subTokens;
         }

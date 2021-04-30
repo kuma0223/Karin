@@ -21,11 +21,10 @@ namespace TestScript
 $var = 4 + 5 + 6;
 $$str = ""abcd""
 
-add[123, sub[456,  441*2]]
+add[123, sub[456, 441*2]]
 
 funcs {
-$a = 123
-add
+ $a = 123
  func2{
    sub+1
  }
@@ -36,17 +35,11 @@ if[$a==1, {
     $b=3
 }]
 
-";
-
-        code = @"
-    $a = 2+3+4
-    $b = $a*2
-    $b
+$$str
 ";
             try {
-                var ana = new Karin.TextAnalyzer(code, "main");
+                var ana = new Karin.TextAnalyzer(code, "script root");
                 ana.Analyze();
-                ana.ToRPN();
                 var tokens = ana.Tokens;
 
 
@@ -57,7 +50,7 @@ if[$a==1, {
                 Console.WriteLine(new KarinEngine().Execute(code));
 
             } catch(KarinException ex) {
-                Console.WriteLine($"{ex.Message}/{ex.ScriptStackTrace}");
+                Console.WriteLine($"{ex.Message}{Environment.NewLine}{ex.ScriptStackTrace}");
             }
 
             //MyPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);

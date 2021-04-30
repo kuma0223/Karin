@@ -29,17 +29,21 @@ namespace Karin
         //--------------------
         //Constructor
 
-        public TextAnalyzer(string src, string blockName, int position=0) {
+        public TextAnalyzer(string src, string blockName)
+            : this(src, blockName, 0, 1) { }
+
+        private TextAnalyzer(string src, string blockName, int position, int line) {
             this.src = src;
             this.BlockName = blockName;
             this.position = position;
+            this.line = line;
         }
 
         public void Analyze() {
             Token t;
             while((t = Next()) != null) {
                 if(t.Type == TokenType.Other) {
-                    throw new KarinException("不明なトークンの出現です。", line, BlockName);
+                    throw new KarinException("不明なトークンの出現です。");
                 }
             }
 
@@ -51,54 +55,61 @@ namespace Karin
         //--------------------
         //Methods
 
-        private Token Next() {            
-            while(position < src.Length) {
-                var c = src[position];
+        private Token Next() {
+            try {
+                while(position < src.Length) {
+                    var c = src[position];
 
-                if(IsSpace(c)) {
-                    position++;
-                    continue;
-                }
-                if (IsBreak(c)) {
-                    position++;
-                    if (!IsLFofCRLF(position-1)) {
-                        line++;
-                        if (tokens.Count>0 && tokens.Last().Type != TokenType.End) {
+                    if(IsSpace(c)) {
+                        position++;
+                        continue;
+                    }
+                    if (IsBreak(c)) {
+                        position++;
+                        if (!IsLFofCRLF(position-1)) {
+                            line++;
+                            if (tokens.Count>0 && tokens.Last().Type != TokenType.End) {
+                                tokens.Add(new Token(TokenType.End, "", line-1));
+                                return tokens.Last();
+                            }
+                        }
+                        continue;
+                    }
+                    if(c == ';') {
+                        position++;
+                        if (tokens.Count > 0 && tokens.Last().Type != TokenType.End) {
                             tokens.Add(new Token(TokenType.End, "", line));
                             return tokens.Last();
                         }
+                        continue;
                     }
-                    continue;
-                }
-                if(c == ';') {
-                    position++;
-                    if (tokens.Count > 0 && tokens.Last().Type != TokenType.End) {
-                        tokens.Add(new Token(TokenType.End, "", line));
-                        return tokens.Last();
+
+                    if (_ANA_LineComment()) continue;
+
+                    Token token = null;
+                    if (token == null) token = _ANA_HereDocument();
+                    if (token == null) token = _ANA_String();
+                    if (token == null) token = _ANA_Number();
+                    if (token == null) token = _ANA_Operator();
+                    if (token == null) token = _ANA_Paren();
+                    if (token == null) token = _ANA_Variable();
+                    if (token == null) token = _ANA_Function();
+
+                    if (token == null) {
+                        position++;
+                        token = new Token(TokenType.Other, c.ToString(), line);
                     }
-                    continue;
+
+                    tokens.Add(token);
+                    return token;
                 }
-
-                if (_ANA_LineComment()) continue;
-
-                Token token = null;
-                if (token == null) token = _ANA_HereDocument();
-                if (token == null) token = _ANA_String();
-                if (token == null) token = _ANA_Number();
-                if (token == null) token = _ANA_Operator();
-                if (token == null) token = _ANA_Paren();
-                if (token == null) token = _ANA_Variable();
-                if (token == null) token = _ANA_Function();
-
-                if (token == null) {
-                    position++;
-                    token = new Token(TokenType.Other, c.ToString(), line);
+                return null;
+            } catch(KarinException ex) {
+                if(ex.StackBlockName != BlockName) {
+                    ex.AddStackTrace(line, BlockName);
                 }
-
-                tokens.Add(token);
-                return token;
+                throw;
             }
-            return null;
         }
         
         //--------------------
@@ -167,7 +178,7 @@ namespace Karin
             while (true) {
                 var c = At(i);
                 if(c == '\0') {
-                    throw new KarinException("ヒアドキュメントが閉じられていません。", line, BlockName);
+                    throw new KarinException("ヒアドキュメントが閉じられていません。");
                 } else if(IsBreak(c) && At(i+1)=='"' && At(i+2)=='$'){
                     i+=3;
                     break;
@@ -197,7 +208,7 @@ namespace Karin
                 var c = At(position);
 
                 if (IsBreak(c)) {
-                    throw new KarinException("文字列が閉じられていません。", line, BlockName);
+                    throw new KarinException("文字列が閉じられていません。");
                 } else if (c == '"') {
                     //エスケープは飛ばしてるので考慮不要
                     position++;
@@ -205,7 +216,7 @@ namespace Karin
                 } else if (c == '\\') {
                     var cc = At(position+1);
                     if (!EscTable.ContainsKey(cc)) {
-                        throw new KarinException($"不明なエスケープ文字'\\{cc}'です。", line, BlockName);
+                        throw new KarinException($"不明なエスケープ文字'\\{cc}'です。");
                     }
                     buf.Append(EscTable[cc]);
                     position+=2;
@@ -238,7 +249,7 @@ namespace Karin
                 var c = At(position);
                 if(c == '.') {
                     if (dec) {
-                        throw new KarinException("不正な数値です。", line, BlockName);
+                        throw new KarinException("不正な数値です。");
                     }
                     dec = true;
                 }else if (!IsNumber(c)) {
@@ -268,7 +279,7 @@ namespace Karin
             }
             var ope = Operator.Parse(str);
             if(ope == null) {
-                throw new KarinException($"不明な演算子'{str}'です。", line, BlockName);
+                throw new KarinException($"不明な演算子'{str}'です。");
             }
             return new OperatorToken(str, line, ope);
         }
@@ -311,7 +322,7 @@ namespace Karin
                 sb.Append(c);
             }
             if (sb.Length == 0) {
-                throw new KarinException("変数名がありません。", line, BlockName);
+                throw new KarinException("変数名がありません。");
             }
 
             var name = sb.ToString();
@@ -325,6 +336,8 @@ namespace Karin
             var c = At(position);
             var yes = (c == '[' || c == '{' || c == ':' || IsFunctionName(c));
             if(!yes) return null;
+
+            int startline = line;
 
             bool isPipe = false;
             if(c == ':') {
@@ -359,39 +372,33 @@ namespace Karin
                 
                 if(sb.Length == 0) {
                     var subs = _ANA_Function_ReadBlock("script block");
-                    return new ScriptBlockToken("", line, subs);
+                    return new ScriptBlockToken("", startline, subs);
                 } else {
                     var subs = _ANA_Function_ReadBlock(fname);
-                    return new ScriptFunctionToken(fname, line, fname, subs);
+                    return new ScriptFunctionToken(fname, startline, fname, subs);
                 }
             }
             else if (c == '[') {
                 //呼び出し
                 position++;
                 var args = _ANA_Function_ReadArgs();
-                return new FunctionToken(fname, line, fname, args, isPipe);
+                return new FunctionToken(fname, startline, fname, args, isPipe);
             }
             else {
                 //引数省略呼び出し
-                return new FunctionToken(fname, line, fname, new List<List<Token>>(), isPipe);
+                return new FunctionToken(fname, startline, fname, new List<List<Token>>(), isPipe);
             }
         }
         
+        //関数定義内解析
         private List<Token> _ANA_Function_ReadBlock(string subBlockName) {
-            var ana = new TextAnalyzer(src, subBlockName, position);
+            var ana = new TextAnalyzer(src, subBlockName, position, 1);
             var subs = new List<Token>();
 
             while (true) {
-                Token t;
-                try { 
-                    t = ana.Next();
-                }catch(KarinException ex) {
-                    ex.AddStackTrace(line, BlockName);
-                    throw;
-                }
-
+                Token t = ana.Next();
                 if (t == null) {
-                    throw new KarinException("ブロックが閉じられていません。", line, BlockName);
+                    throw new KarinException("ブロックが閉じられていません。");
                 }
                 if (t.Type == TokenType.Other && t.Text == "}") {
                     break;
@@ -399,26 +406,23 @@ namespace Karin
                 subs.Add(t);
             }
             position = ana.position;
+            line += ana.line-1;
             return subs;
         }
-
+        
+        //関数引数解析
         private List<List<Token>> _ANA_Function_ReadArgs() {
             var args = new List<List<Token>>();
 
-            Token t;
             while (true) {
-                var ana = new TextAnalyzer(src, BlockName, position);
+                var ana = new TextAnalyzer(src, BlockName, position, line);
                 var arg = new List<Token>();
-                while (true) {
-                    try {
-                        t = ana.Next();
-                    } catch (KarinException ex) {
-                        ex.AddStackTrace(line, BlockName);
-                        throw;
-                    }
+                Token t;
 
+                while (true) {
+                    t = ana.Next();
                     if (t == null) {
-                        throw new KarinException("引数が閉じられていません。", line, BlockName);
+                        throw new KarinException("引数が閉じられていません。");
                     }
                     if (t.Type == TokenType.Other && (t.Text == "," || t.Text == "]")) {
                         break;
@@ -426,84 +430,16 @@ namespace Karin
                     arg.Add(t);
                 }
                 position = ana.position;
+                //line += ana.line-1;
+                line = ana.line;
+
                 args.Add(arg);
+
                 if (t.Text == "]") {
                     break;
                 }
             }
             return args;
         }
-        
-        /// <summary>
-        /// 逆ポーランド記法変換
-        /// </summary>
-        public void ToRPN() {
-            this.tokens = ToRPN(tokens);
-        }
-
-        /// <summary>
-        /// 逆ポーランド記法変換
-        /// </summary>
-        private List<Token> ToRPN(List<Token> tokens) {
-            var ret = new List<Token>(tokens.Count);  //結果格納
-            var opeStack = new Stack<Token>();        //演算子スタック
-
-            foreach (var token in tokens) {
-                if (token.Type == TokenType.Operator) {
-                    //要素は演算子
-                    var to = (OperatorToken)token;
-
-                    //スタック内の優先順位が以上の演算子をすべて結果に移動する
-                    while (true) {
-                        if (opeStack.Count == 0) { break; }
-                        if (opeStack.Peek().Type == TokenType.LParen) { break; }
-                        if ((opeStack.Peek() as OperatorToken).Operator.Priority < to.Operator.Priority) {
-                            break;
-                        }
-                        ret.Add(opeStack.Pop());
-                    }
-                    opeStack.Push(token);
-                } else if (token.Type == TokenType.LParen) {
-                    //要素は左括弧
-                    opeStack.Push(token);
-                } else if (token.Type == TokenType.RParen) {
-                    //要素は右括弧
-                    //左括弧までの全演算子を結果に格納する
-                    while (opeStack.Count > 0) {
-                        var ope = opeStack.Pop();
-                        if (ope.Type == TokenType.LParen) {
-                            break;
-                        } else {
-                            ret.Add(ope);
-                        }
-                    }
-                } else if (token.Type == TokenType.End) {
-                    //要素は終端
-                    //スタックに残った演算子をすべて結果に移動する
-                    while (opeStack.Count > 0) {
-                        ret.Add(opeStack.Pop());
-                    }
-                    ret.Add(token);
-                } else {
-                    //要素はその他の項目
-                    ret.Add(token);
-
-                    if(token.Type == TokenType.Function) {
-                        var t = token as FunctionToken;
-                        for(int i=0; i<t.Arguments.Count; i++){
-                            t.Arguments[i] = ToRPN(t.Arguments[i]);
-                        }
-                    }else if(token.Type == TokenType.ScriptFunction) {
-                        var t = token as ScriptFunctionToken;
-                        t.SubTokens = ToRPN(t.SubTokens);
-                    } else if (token.Type == TokenType.Subscript) {
-                        var t = token as ScriptBlockToken;
-                        t.SubTokens = ToRPN(t.SubTokens);
-                    }
-                }
-            }
-            return ret;
-        }
-
     }
 }

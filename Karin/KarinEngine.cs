@@ -72,7 +72,7 @@ namespace Karin
         /// <summary>
         /// スクリプトを停止します。
         /// このメソッドを呼んだ時点で実行されている処理ブロックが
-        /// 完了した時点でKourinAbortExeptionが発生します。
+        /// 完了した時点でKarinAbortExeptionが発生します。
         /// スクリプトが既に停止している場合、何も起りません。
         /// </summary>
         public void Stop() {
@@ -101,12 +101,14 @@ namespace Karin
                 IsRunning = true;
 
                 //字句解析
-                var ana = new TextAnalyzer(script, "root");
+                var ana = new TextAnalyzer(script, "script root");
                 ana.Analyze();
-                ana.ToRPN();
+
+                TokenUtility.Check(ana.Tokens, "script root");
+                var rpn = TokenUtility.ToRPN(ana.Tokens);
 
                 //実行
-                var ret = Ride(ana.Tokens, "root");
+                var ret = Ride(rpn, "script root");
 
                 if (ret is ReturnedObject) {
                     ret = (ret as ReturnedObject).Value;
@@ -190,7 +192,7 @@ namespace Karin
                     //（出現時点では代入か取得か不明）
                     stack.Push(new Variable((VariableToken)token));
                 }
-                else if (token.Type == TokenType.Subscript) {
+                else if (token.Type == TokenType.ScriptBlockToken) {
                     //スクリプトブロック
                     //すぐ実行して結果をスタック
                     var t = (ScriptBlockToken)token;
@@ -256,7 +258,7 @@ namespace Karin
                 //スコープ変数を戻す
                 ScopedVariables = table;
 
-                //RETURN戻りの場合は値を復元する
+                //RETURNオブジェクト場合は値を復元する
                 if (ret is ReturnedObject){
                     ret = ((ReturnedObject)ret).Value;
                 }

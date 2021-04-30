@@ -14,5 +14,9 @@ namespace Karin
         public Variable(VariableToken token) {
             this.token = token;
         }
+
+        public override string ToString() {
+            return $"{token.Text}";
+        }
     }
 }
