@@ -48,7 +48,7 @@ namespace Karin
             }
 
             if(tokens.Any() && tokens.Last().Type != TokenType.End) {
-                tokens.Add(new Token(TokenType.End, "", line));
+                tokens.Add(new Token(TokenType.End, "", BlockName, line));
             }
         }
 
@@ -69,7 +69,7 @@ namespace Karin
                         if (!IsLFofCRLF(position-1)) {
                             line++;
                             if (tokens.Count>0 && tokens.Last().Type != TokenType.End) {
-                                tokens.Add(new Token(TokenType.End, "", line-1));
+                                tokens.Add(new Token(TokenType.End, "", BlockName, line-1));
                                 return tokens.Last();
                             }
                         }
@@ -78,7 +78,7 @@ namespace Karin
                     if(c == ';') {
                         position++;
                         if (tokens.Count > 0 && tokens.Last().Type != TokenType.End) {
-                            tokens.Add(new Token(TokenType.End, "", line));
+                            tokens.Add(new Token(TokenType.End, "", BlockName, line));
                             return tokens.Last();
                         }
                         continue;
@@ -97,7 +97,7 @@ namespace Karin
 
                     if (token == null) {
                         position++;
-                        token = new Token(TokenType.Other, c.ToString(), line);
+                        token = new Token(TokenType.Other, $"{c}", BlockName, line);
                     }
 
                     tokens.Add(token);
@@ -192,7 +192,7 @@ namespace Karin
             }
             position = i;
 
-            return new Token(TokenType.String, sb.ToString(), line);
+            return new Token(TokenType.String, $"{sb}", BlockName, line);
         }
         
         //--------------------
@@ -226,7 +226,7 @@ namespace Karin
                 }
             }
 
-            return new Token(TokenType.String, buf.ToString(), line);
+            return new Token(TokenType.String, $"{buf}", BlockName, line);
         }
         
         //--------------------
@@ -258,7 +258,7 @@ namespace Karin
                 sb.Append(c);
                 position++;
             }
-            return new Token(TokenType.Number, sb.ToString(), line);
+            return new Token(TokenType.Number, $"{sb}", BlockName, line);
         }
         
         //--------------------
@@ -281,7 +281,7 @@ namespace Karin
             if(ope == null) {
                 throw new KarinException($"不明な演算子'{str}'です。");
             }
-            return new OperatorToken(str, line, ope);
+            return new OperatorToken(str, BlockName, line, ope);
         }
         
         //--------------------
@@ -290,11 +290,11 @@ namespace Karin
             var c = At(position);
             if (c == '(') {
                 position++;
-                return new Token(TokenType.LParen, "(", line);
+                return new Token(TokenType.LParen, "(", BlockName, line);
             }
             if(c == ')') {
                 position++;
-                return new Token(TokenType.RParen, ")", line);
+                return new Token(TokenType.RParen, ")", BlockName, line);
             }
             return null;
         }
@@ -327,7 +327,7 @@ namespace Karin
 
             var name = sb.ToString();
             var text = global ? "$$"+name : "$"+name;
-            return new VariableToken(text, line, name, global);
+            return new VariableToken(text, BlockName, line, name, global);
         }
         
         //--------------------
@@ -372,21 +372,21 @@ namespace Karin
                 
                 if(sb.Length == 0) {
                     var subs = _ANA_Function_ReadBlock("script block");
-                    return new ScriptBlockToken("", startline, subs);
+                    return new ScriptBlockToken("", BlockName, startline, subs);
                 } else {
                     var subs = _ANA_Function_ReadBlock(fname);
-                    return new ScriptFunctionToken(fname, startline, fname, subs);
+                    return new ScriptFunctionToken(fname, BlockName, startline, fname, subs);
                 }
             }
             else if (c == '[') {
                 //呼び出し
                 position++;
                 var args = _ANA_Function_ReadArgs();
-                return new FunctionToken(fname, startline, fname, args, isPipe);
+                return new FunctionToken(fname, BlockName, startline, fname, args, isPipe);
             }
             else {
                 //引数省略呼び出し
-                return new FunctionToken(fname, startline, fname, new List<List<Token>>(), isPipe);
+                return new FunctionToken(fname, BlockName, startline, fname, new List<Token>[0], isPipe);
             }
         }
         
@@ -411,7 +411,7 @@ namespace Karin
         }
         
         //関数引数解析
-        private List<List<Token>> _ANA_Function_ReadArgs() {
+        private List<Token>[] _ANA_Function_ReadArgs() {
             var args = new List<List<Token>>();
 
             while (true) {
@@ -439,7 +439,7 @@ namespace Karin
                     break;
                 }
             }
-            return args;
+            return args.ToArray();
         }
     }
 }

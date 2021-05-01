@@ -55,7 +55,7 @@ namespace Karin
 
                     if(token.Type == TokenType.Function) {
                         var t = token as FunctionToken;
-                        for(int i=0; i<t.Arguments.Count; i++){
+                        for(int i=0; i<t.Arguments.Length; i++){
                             t.Arguments[i] = ToRPN(t.Arguments[i]);
                         }
                     }else if(token.Type == TokenType.ScriptFunction) {
@@ -73,7 +73,7 @@ namespace Karin
         /// <summary>
         /// 字句解析後チェック
         /// </summary>
-        public static void Check(List<Token> tokens, string blockName)
+        public static void Check(List<Token> tokens)
         {
             var isOperand = new Func<Token,bool>(t => {
                 return t.Type == TokenType.String
@@ -84,11 +84,13 @@ namespace Karin
 
             int perCount = 0;
             int line = 0;
+            string block = "";
 
             try { 
                 for (var i = 0; i < tokens.Count; i++) {
                     Token t = tokens[i];
                     line = t.Line;
+                    block = t.Block;
 
                     if (t.Type == TokenType.Operator) {
                         if (i == 0 || i == tokens.Count - 1) {
@@ -106,13 +108,13 @@ namespace Karin
                     }
                     else if(isOperand(t)) {
                         if (i > 0 && (tokens[i-1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
-                            throw new KarinException($"リテラル/関数/変数が連続しています。'{t.Text}'");
+                            throw new KarinException($"被演算子が連続しています。'{t.Text}'");
                         }
                     }
                     else if (t.Type == TokenType.LParen){
                         perCount++;
                         if (i> 0 && (tokens[i-1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
-                            throw new KarinException($"リテラル/関数/変数が連続しています。'{t.Text}'");
+                            throw new KarinException($"被演算子が連続しています。'{t.Text}'");
                         }
                     }
                     else if (t.Type == TokenType.RParen){
@@ -124,16 +126,16 @@ namespace Karin
                     else if(t.Type == TokenType.Function) {
                         var token = t as FunctionToken;
                         foreach(var arg in token.Arguments) {
-                            Check(arg, blockName);
+                            Check(arg);
                         }
                     }
                     else if(t.Type == TokenType.ScriptBlockToken) {
                         var token = t as ScriptBlockToken;
-                        Check(token.SubTokens, "script block");
+                        Check(token.SubTokens);
                     }
                     else if(t.Type == TokenType.ScriptFunction) {
                         var token = t as ScriptFunctionToken;
-                        Check(token.SubTokens, token.Name);
+                        Check(token.SubTokens);
                     }
                 }
 
@@ -141,8 +143,8 @@ namespace Karin
                     throw new KarinException("()の対応がとれていません。");
                 }
             } catch(KarinException ex) {
-                if(ex.StackBlockName != blockName) {
-                    ex.AddStackTrace(line, blockName);
+                if(ex.StackBlockName != block) {
+                    ex.AddStackTrace(line, block);
                 }
                 throw;
             }

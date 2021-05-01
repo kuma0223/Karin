@@ -32,7 +32,7 @@ namespace Karin
         /// <param name="karin">実行エンジン</param>
         /// <param name="args">引数</param>
         /// <returns>結果値</returns>
-        object Execute(KarinEngine karin, object[] args);
+        object Execute(KarinEngine engine, List<Token>[] args);
     }
 
     /// <summary>

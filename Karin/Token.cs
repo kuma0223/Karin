@@ -11,12 +11,14 @@ namespace Karin
     {
         public TokenType Type;
         public string Text;
+        public string Block;
         public int Line;
 
-        public Token(TokenType type, string text, int line)
+        public Token(TokenType type, string text, string block, int line)
         {
             this.Type = type;
             this.Text = text;
+            this.Block = block;
             this.Line = line;
         }
         public override string ToString()
@@ -44,10 +46,10 @@ namespace Karin
     {
         public Operator Operator;
 
-        public OperatorToken(string text, int line, Operator targetOperator)
-            : base(TokenType.Operator, text, line)
+        public OperatorToken(string text, string block, int line, Operator target)
+            : base(TokenType.Operator, text, block, line)
         {
-            this.Operator = targetOperator;
+            this.Operator = target;
         }
     }
 
@@ -56,8 +58,8 @@ namespace Karin
         public string Name;
         public bool IsGlobal = false;
 
-        public VariableToken(string text, int line, string varName, bool isGlobal)
-            : base(TokenType.Variable, text, line)
+        public VariableToken(string text, string block, int line, string varName, bool isGlobal)
+            : base(TokenType.Variable, text, block, line)
         {
             this.Name = varName;
             this.IsGlobal = isGlobal;
@@ -67,12 +69,12 @@ namespace Karin
     class FunctionToken : Token
     {
         public string Name;
-        public List<List<Token>> Arguments;
+        public List<Token>[] Arguments;
 
         public bool IsPipe;
 
-        public FunctionToken(string text, int line, string funcName, List<List<Token>> arguments, bool isPipe)
-            : base(TokenType.Function, text, line)
+        public FunctionToken(string text, string block, int line, string funcName, List<Token>[] arguments, bool isPipe)
+            : base(TokenType.Function, text, block, line)
         {
             this.Name = funcName;
             this.Arguments = arguments;
@@ -105,8 +107,8 @@ namespace Karin
         public string Name;
         public List<Token> SubTokens;
 
-        public ScriptFunctionToken(string text, int line, string funcName, List<Token> subTokens)
-            : base(TokenType.ScriptFunction, text, line)
+        public ScriptFunctionToken(string text, string block, int line, string funcName, List<Token> subTokens)
+            : base(TokenType.ScriptFunction, text, block, line)
         {
             this.Name = funcName;
             this.SubTokens = subTokens;
@@ -131,8 +133,8 @@ namespace Karin
     {
         public List<Token> SubTokens;
 
-        public ScriptBlockToken(string text, int line, List<Token> subTokens)
-            : base(TokenType.ScriptBlockToken, text, line)
+        public ScriptBlockToken(string text, string block, int line, List<Token> subTokens)
+            : base(TokenType.ScriptBlockToken, text, block, line)
         {
             this.SubTokens = subTokens;
         }

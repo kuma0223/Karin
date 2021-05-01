@@ -104,7 +104,7 @@ namespace Karin
                 var ana = new TextAnalyzer(script, "script root");
                 ana.Analyze();
 
-                TokenUtility.Check(ana.Tokens, "script root");
+                TokenUtility.Check(ana.Tokens);
                 var rpn = TokenUtility.ToRPN(ana.Tokens);
 
                 //実行
@@ -226,9 +226,40 @@ namespace Karin
         /// <summary>
         /// 関数呼び出し
         /// </summary>
-        private object CallFunction(FunctionToken token, object pipedObj)
-        {
-            return null;
+        private object CallFunction(FunctionToken token, object pipedObj) {
+            if (!FunctionTable.ContainsKey(token.Name)) {
+                throw new KarinException($"関数'{token.Name}'が見つかりません。");
+            }
+
+            var func = FunctionTable[token.Name];
+
+            if (func is IKarinSyntaxFunction) {
+                //構文関数
+                //引数を演算しない
+                if (token.IsPipe) {
+                    throw new KarinException($"構文関数'{token.Name}'をパイプできません。");
+                }
+                var ret = (func as IKarinSyntaxFunction)
+                    .Execute(this, token.Arguments);
+
+                return ret;
+            }
+            else {
+                //引数を先に算出
+                var args = token.Arguments;
+                var pic = token.IsPipe ? 1 : 0;
+
+                object[] argsObj = new object[args.Length + pic];
+
+                if (token.IsPipe) {
+                    argsObj[0] = pipedObj;
+                }
+                for (int i = 0; i < args.Length; i++) {
+                    argsObj[i + pic] = Ride(args[i], token.Block);
+                }
+
+                return CallFunction(token.Name, args);
+            }
         }
         
         /// <summary>
@@ -240,33 +271,33 @@ namespace Karin
             }
 
             var func = FunctionTable[funcName];
-            object ret;
-            if (func is ScriptFunction) {
-                //スクリプト関数
 
-                //現在のスコープ変数を退避
+            if (func is ScriptFunction) {
+                //スクリプト定義関数
+
+                //スコープ退避
+                var varstack = ScopedVariables;
+
                 //新規にスコープを作成して引数を追加
-                var table = ScopedVariables;
                 ScopedVariables = new Dictionary<string, object>();
-                for (var i = 0; i < args.Length; i++){
+                for (var i = 0; i < args.Length; i++) {
                     ScopedVariables["args" + i] = args[i];
                 }
 
                 //実行
-                ret = Ride((func as ScriptFunction).Tokens, func.Name);
-
-                //スコープ変数を戻す
-                ScopedVariables = table;
-
-                //RETURNオブジェクト場合は値を復元する
-                if (ret is ReturnedObject){
+                var ret = Ride((func as ScriptFunction).Tokens, func.Name);
+                if (ret is ReturnedObject) {
                     ret = ((ReturnedObject)ret).Value;
                 }
+
+                //スコープ復帰
+                ScopedVariables = varstack;
+
+                return ret;
             } else {
-                //静的登録関数
-                ret = func.Execute(args);
+                //制的定義関数
+                return CallFunction(funcName, args);
             }
-            return ret;
         }
 
         /// <summary>

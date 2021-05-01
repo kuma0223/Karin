@@ -26,7 +26,7 @@ add[123, sub[456, 441*2]]
 funcs {
  $a = 123
  func2{
-   sub+1
+   sub+1 3
  }
 }
 
