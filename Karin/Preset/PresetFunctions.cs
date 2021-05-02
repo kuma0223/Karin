@@ -38,7 +38,9 @@ namespace Karin.Preset
             yield return new KFunc_REPEAT();
             yield return new KFunc_WHILE();
             yield return new KFunc_RETURN();
+
             yield return new KFunc_TOSCRIPT();
+            yield return new KFunc_DOSCRIPT();
         }
     }
 }

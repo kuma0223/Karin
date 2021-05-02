@@ -21,27 +21,29 @@ namespace TestScript
 $var = 4 + 5 + 6;
 $$str = ""abcd""
 
-add[123, sub[456, 441*2]]
+$x = add[123, sub[456, 441*2]]
 
 funcs {
  $a = 123
  func2{
-   sub+1 3
+   sub+1
  }
 }
+
+$a = 1
 
 if[$a==1, {
     $a=2
     $b=3
 }]
 
-$$str
+$x
 ";
             try {
                 var ana = new Karin.TextAnalyzer(code, "script root");
                 ana.Analyze();
                 var tokens = ana.Tokens;
-
+                tokens = TokenUtility.ToRPN(tokens);
 
                 foreach (var t in tokens) {
                     Console.WriteLine(t.ToString());

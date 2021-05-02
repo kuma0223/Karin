@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Karin
 {
-    class TokenUtility
+    public class TokenUtility
     {
         /// <summary>
         /// 逆ポーランド記法変換
@@ -67,6 +67,12 @@ namespace Karin
                     }
                 }
             }
+
+            //最後にスタックに残った演算子をすべて結果に移動する
+            while (opeStack.Count > 0) {
+                ret.Add(opeStack.Pop());
+            }
+
             return ret;
         }
         

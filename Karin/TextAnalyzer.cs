@@ -47,9 +47,9 @@ namespace Karin
                 }
             }
 
-            if(tokens.Any() && tokens.Last().Type != TokenType.End) {
-                tokens.Add(new Token(TokenType.End, "", BlockName, line));
-            }
+            //if(tokens.Any() && tokens.Last().Type != TokenType.End) {
+            //    tokens.Add(new Token(TokenType.End, "", BlockName, line));
+            //}
         }
 
         //--------------------
@@ -337,6 +337,7 @@ namespace Karin
             var yes = (c == '[' || c == '{' || c == ':' || IsFunctionName(c));
             if(!yes) return null;
 
+            int startpos = position;
             int startline = line;
 
             bool isPipe = false;
@@ -372,21 +373,25 @@ namespace Karin
                 
                 if(sb.Length == 0) {
                     var subs = _ANA_Function_ReadBlock("script block");
-                    return new ScriptBlockToken("", BlockName, startline, subs);
+                    var txt = src.Substring(startpos, position - startpos);
+                    return new ScriptBlockToken(txt, BlockName, startline, subs);
                 } else {
                     var subs = _ANA_Function_ReadBlock(fname);
-                    return new ScriptFunctionToken(fname, BlockName, startline, fname, subs);
+                    var txt = src.Substring(startpos, position - startpos);
+                    return new ScriptFunctionToken(txt, BlockName, startline, fname, subs);
                 }
             }
             else if (c == '[') {
                 //呼び出し
                 position++;
                 var args = _ANA_Function_ReadArgs();
-                return new FunctionToken(fname, BlockName, startline, fname, args, isPipe);
+                var txt = src.Substring(startpos, position - startpos);
+                return new FunctionToken(txt, BlockName, startline, fname, args, isPipe);
             }
             else {
                 //引数省略呼び出し
-                return new FunctionToken(fname, BlockName, startline, fname, new List<Token>[0], isPipe);
+                var txt = src.Substring(startpos, position - startpos);
+                return new FunctionToken(txt, BlockName, startline, fname, new List<Token>[0], isPipe);
             }
         }
         

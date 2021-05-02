@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using Karin.Preset;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Karin
 {
@@ -44,13 +45,6 @@ namespace Karin
             foreach(var f in PresetFunctions.Create()) {
                 SetFunction(f);
             }
-            /*
-            //文字列をスクリプトとして実行する関数
-            setFunction(new KourinFunction("DOSCRIPT", (args) => {
-                if (args.Length == 0) throw new KourinException("DOSCRIPT関数の引数が不足しています。");
-                return this.rideScript(args[0].ToString(), "DOSCRIPT");
-            }));
-            */
         }
 
         /// <summary>
@@ -108,7 +102,7 @@ namespace Karin
                 var rpn = TokenUtility.ToRPN(ana.Tokens);
 
                 //実行
-                var ret = Ride(rpn, "script root");
+                var ret = Ride(rpn);
 
                 if (ret is ReturnedObject) {
                     ret = (ret as ReturnedObject).Value;
@@ -120,7 +114,24 @@ namespace Karin
             }
         }
 
-        private object Ride(List<Token> tokens, string blockName) {
+        /// <summary>
+        /// スクリプトを実行します。
+        /// （再帰用）
+        /// </summary>
+        private object Eval(string script) {
+            var ana = new TextAnalyzer(script, "script eval");
+            ana.Analyze();
+
+            TokenUtility.Check(ana.Tokens);
+            var rpn = TokenUtility.ToRPN(ana.Tokens);
+            var ret = Ride(rpn);
+            if (ret is ReturnedObject) {
+                ret = (ret as ReturnedObject).Value;
+            }
+            return ret;
+        }
+
+        internal object Ride(List<Token> tokens) {
 
             //引数が変数なら変数テーブルから値を取得
             //そうでなければそのまま返す
@@ -142,85 +153,104 @@ namespace Karin
 
             //計算実行
             foreach (var token in tokens) {
-                if (token.Type == TokenType.Number) {
-                    //数値リテラル
-                    object box;
-                    if (!ToNumber(token.Text, out box)) {
-                        throw new KarinException($"'{token}'を数値へ変換できません。");
+                try { 
+                    if (token.Type == TokenType.Number) {
+                        //数値リテラル
+                        object box;
+                        if (!ToNumber(token.Text, out box)) {
+                            throw new KarinException($"'{token}'を数値へ変換できません。");
+                        }
+                        stack.Push(box);
                     }
-                    stack.Push(box);
-                }
-                else if (token.Type == TokenType.String) {
-                    //文字列リテラル
-                    stack.Push(token.Text);
-                }
-                else if (token.Type == TokenType.Function) {
-                    //関数呼び出し
-                    var ft = token as FunctionToken;
-                    if (ft.IsPipe){
-                        var pipeobj = getVarIf(stack.Pop());
-                        stack.Push(CallFunction(ft, pipeobj));
-                    } else {
-                        stack.Push(CallFunction(ft, null));
-                    } 
-                }
-                else if (token.Type == TokenType.Operator) {
-                    //演算子
-                    var t = (OperatorToken)token;
-                    var args = new object[2];
+                    else if (token.Type == TokenType.String) {
+                        //文字列リテラル
+                        stack.Push(token.Text);
+                    }
+                    else if (token.Type == TokenType.Function) {
+                        //関数呼び出し
+                        var ft = token as FunctionToken;
+                        if (ft.IsPipe){
+                            var pipeobj = getVarIf(stack.Pop());
+                            stack.Push(CallFunction(ft, pipeobj));
+                        } else {
+                            stack.Push(CallFunction(ft, null));
+                        } 
+                    }
+                    else if (token.Type == TokenType.Operator) {
+                        //演算子
+                        var t = (OperatorToken)token;
+                        var args = new object[2];
 
-                    args[1] = stack.Pop(); //後ろの数の方が後入れされている
-                    args[0] = stack.Pop();
+                        args[1] = stack.Pop(); //後ろの数の方が後入れされている
+                        args[0] = stack.Pop();
 
-                    if (t.Operator.Mark == "=") {
-                        //代入
-                        var va = (Variable)args[0];
-                        var tbl = va.token.IsGlobal ? Variables : ScopedVariables;
-                        tbl[va.token.Name] = getVarIf(args[1]);
+                        if (t.Operator.Mark == "=") {
+                            //代入
+                            var va = (Variable)args[0];
+                            var tbl = va.token.IsGlobal ? Variables : ScopedVariables;
+                            tbl[va.token.Name] = getVarIf(args[1]);
+                            stack.Push(null);
+                        } else {
+                            //代入以外
+                            //対応する関数を呼ぶ
+                            args[0] = getVarIf(args[0]);
+                            args[1] = getVarIf(args[1]);
+                            stack.Push(CallFunction(t.Operator.Function, args));
+                        }
+                    }
+                    else if (token.Type == TokenType.Variable) {
+                        //変数
+                        //変数オブジェクトを作ってスタック
+                        //（出現時点では代入か取得か不明）
+                        stack.Push(new Variable((VariableToken)token));
+                    }
+                    else if (token.Type == TokenType.ScriptBlockToken) {
+                        //スクリプトブロック
+                        //すぐ実行して結果をスタック
+                        var t = (ScriptBlockToken)token;
+                        var r = Ride(t.SubTokens);
+                        stack.Push(r);
+                    }
+                    else if(token.Type == TokenType.ScriptFunction) {
+                        //ユーザー関数宣言
+                        var t = (ScriptFunctionToken)token;
+                        var fd = FunctionTable;
+                        if (fd.ContainsKey(t.Name) && !(fd[t.Name] is ScriptFunction)) {
+                            throw new KarinException($"静的登録関数({t.Name})は上書きできません。");
+                        }
+                        SetFunction(new ScriptFunction(t.Name, t.SubTokens));
                         stack.Push(null);
-                    } else {
-                        //代入以外
-                        //対応する関数を呼ぶ
-                        args[0] = getVarIf(args[0]);
-                        args[1] = getVarIf(args[1]);
-                        stack.Push(CallFunction(t.Operator.Function, args));
                     }
-                }
-                else if (token.Type == TokenType.Variable) {
-                    //変数
-                    //変数オブジェクトを作ってスタック
-                    //（出現時点では代入か取得か不明）
-                    stack.Push(new Variable((VariableToken)token));
-                }
-                else if (token.Type == TokenType.ScriptBlockToken) {
-                    //スクリプトブロック
-                    //すぐ実行して結果をスタック
-                    var t = (ScriptBlockToken)token;
-                    var r = Ride(t.SubTokens, "script block");
-                    stack.Push(r);
-                }
-                else if(token.Type == TokenType.ScriptFunction) {
-                    //ユーザー関数宣言
-                    var t = (ScriptFunctionToken)token;
-                    var fd = FunctionTable;
-                    if (fd.ContainsKey(t.Name) && !(fd[t.Name] is ScriptFunction)) {
-                        throw new KarinException($"静的登録関数({t.Name})は上書きできません。");
+                    else if(token.Type == TokenType.End) {
+                        //終端
+                        //結果値を取り出してスタックをクリア
+                        if (stack.Count > 1) {
+                            throw new KarinException("単一の演算結果が得られませんでした。");
+                        }
+                        last = stack.Any() ? getVarIf(stack.Pop()) : null;
+                        stack.Clear();
                     }
-                    SetFunction(new ScriptFunction(t.Name, t.SubTokens));
-                    stack.Push(null);
-                }
-                else if(token.Type == TokenType.End) {
-                    //終端
-                    //結果値を取り出してスタックをクリア
-                    if (stack.Count > 1) {
-                        throw new KarinException("単一の演算結果が得られませんでした。");
+                }catch(KarinException ex) {
+                    if(ex.StackBlockName != token.Block) {
+                        ex.AddStackTrace(token.Line, token.Block);
                     }
-                    last = stack.Any() ? stack.Pop() : null;
-                    stack.Clear();
+                    throw;
+                }catch(Exception ex) {
+                    var e = new KarinException($"実行時エラー({ex.GetType().Name})"
+                        , ex, token.Line, token.Block);
+                    throw e;
                 }
             }
 
-            return getVarIf(last);
+            if (stack.Any()) {
+                //結果値を取り出し
+                if (stack.Count > 1) {
+                    throw new KarinException("単一の演算結果が得られませんでした。");
+                }
+                last = stack.Any() ? getVarIf(stack.Pop()) : null;
+            }
+
+            return last;
         }
         
         /// <summary>
@@ -233,7 +263,21 @@ namespace Karin
 
             var func = FunctionTable[token.Name];
 
-            if (func is IKarinSyntaxFunction) {
+            if(func is KFunc_TOSCRIPT) {
+                //個別：スクリプト取得構文関数
+                var ptn = new Regex($@"{token.Name}\s{{(.*)}}");
+                var mc = ptn.Match(token.Text);
+                return mc.Groups[1].Value;
+            }
+            else if(func is KFunc_DOSCRIPT) {
+                //個別：スクリプト文字列実行関数
+                var s = token.IsPipe ? pipedObj : Ride(token.Arguments[0]);
+                if(!(s is string)) {
+                    throw new KarinException($"構文関数'{token.Name}'を実行できません。");
+                }
+                return Eval((string)s);
+            }
+            else if (func is IKarinSyntaxFunction) {
                 //構文関数
                 //引数を演算しない
                 if (token.IsPipe) {
@@ -255,10 +299,10 @@ namespace Karin
                     argsObj[0] = pipedObj;
                 }
                 for (int i = 0; i < args.Length; i++) {
-                    argsObj[i + pic] = Ride(args[i], token.Block);
+                    argsObj[i + pic] = Ride(args[i]);
                 }
 
-                return CallFunction(token.Name, args);
+                return CallFunction(token.Name, argsObj);
             }
         }
         
@@ -285,7 +329,7 @@ namespace Karin
                 }
 
                 //実行
-                var ret = Ride((func as ScriptFunction).Tokens, func.Name);
+                var ret = Ride((func as ScriptFunction).Tokens);
                 if (ret is ReturnedObject) {
                     ret = ((ReturnedObject)ret).Value;
                 }
@@ -296,7 +340,7 @@ namespace Karin
                 return ret;
             } else {
                 //制的定義関数
-                return CallFunction(funcName, args);
+                return func.Execute(args);
             }
         }
 
