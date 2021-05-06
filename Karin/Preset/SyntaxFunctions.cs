@@ -1,21 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Karin.Preset
 {
+    /// <summary>
+    /// 制御構文用の関数インタフェース
+    /// </summary>
+    interface IKarinSyntaxFunction : IKarinFunction
+    {
+        /// <summary>
+        /// 関数を呼び出し結果を返します。
+        /// </summary>
+        /// <param name="karin">実行エンジン</param>
+        /// <param name="token">トークン</param>
+        /// <param name="pipedObj">パイプオブジェクト</param>
+        /// <returns>結果値</returns>
+        object Execute(KarinEngine engine, FunctionToken token, object pipedObj);
+
+        /// <summary>
+        /// パイプ呼び出しが可能か否かを返します。
+        /// </summary>
+        bool AcceptablePipeObject { get; }
+    }
+
     /// <summary>
     /// IF構文関数
     /// </summary>
     class KFunc_IF : IKarinSyntaxFunction
     {
-        public string Name { get { return "IF"; } }
+        public string Name {
+            get { return "IF"; }
+        }
+
+        public bool AcceptablePipeObject {
+            get { return false; }
+        }
 
         public object Execute(object[] args) {
             throw new NotImplementedException();
         }
 
-        public object Execute(KarinEngine engine, List<Token>[] args) {
+        public object Execute(KarinEngine engine, FunctionToken token, object pipedObj) {
+            var args = token.Arguments;
+
             if (!(2 <= args.Length || args.Length <= 3)) {
                 throw new KarinException($"{Name}関数の引数の数が不正です。");
             }
@@ -41,13 +70,20 @@ namespace Karin.Preset
     /// </summary>
     class KFunc_REPEAT : IKarinSyntaxFunction
     {
-        public string Name { get { return "REPEAT"; } }
+        public string Name {
+            get { return "REPEAT"; }
+        }
+
+        public bool AcceptablePipeObject {
+            get { return false; }
+        }
 
         public object Execute(object[] args) {
             throw new NotImplementedException();
         }
 
-        public object Execute(KarinEngine engine, List<Token>[] args) {
+        public object Execute(KarinEngine engine, FunctionToken token, object pipedObj) {
+            var args = token.Arguments;
             if (args.Length != 2) {
                 throw new KarinException($"{Name}関数の引数の数が不正です。");
             }
@@ -70,13 +106,21 @@ namespace Karin.Preset
     /// </summary>
     class KFunc_WHILE : IKarinSyntaxFunction
     {
-        public string Name { get { return "WHILE"; } }
+        public string Name {
+            get { return "WHILE"; }
+        }
+
+        public bool AcceptablePipeObject {
+            get { return false; }
+        }
 
         public object Execute(object[] args) {
             throw new NotImplementedException();
         }
 
-        public object Execute(KarinEngine engine, List<Token>[] args) {
+        public object Execute(KarinEngine engine, FunctionToken token, object pipedObj) {
+            var args = token.Arguments;
+
             if (args.Length != 2) {
                 throw new KarinException($"{Name}関数の引数の数が不正です。");
             }
@@ -97,6 +141,110 @@ namespace Karin.Preset
             return ret;
         }
     }
+
+    /// <summary>
+    /// スクリプト取得
+    /// </summary>
+    class KFunc_TOSCRIPT : IKarinSyntaxFunction
+    {   
+        public string Name {
+            get { return "TOSCRIPT"; }
+        }
+
+        public bool AcceptablePipeObject {
+            get { return false; }
+        }
+
+        public object Execute(object[] args) {
+            throw new NotImplementedException();
+        }
+
+        public object Execute(KarinEngine engine, FunctionToken token, object pipedObj) {
+            if(token.Arguments.Length != 1) {
+                throw new KarinException($"{Name}関数の引数の数が不正です。");
+            }
+
+            var ptn = new System.Text.RegularExpressions.Regex($@"{token.Name}\s*\[(.*)\]");
+            var mc = ptn.Match(token.Text);
+            return mc.Groups[1].Value;
+        }
+    }
+    /// <summary>
+    /// スクリプト実行
+    /// </summary>
+    class KFunc_DOSCRIPT : IKarinSyntaxFunction
+    {
+        public string Name {
+            get { return "DOSCRIPT"; }
+        }
+
+        public bool AcceptablePipeObject {
+            get { return true; }
+        }
+
+        public object Execute(object[] args) {
+            throw new NotImplementedException();
+        }
+
+        public object Execute(KarinEngine engine, FunctionToken token, object pipedObj) {
+            if(!((token.IsPipe && token.Arguments.Length==0)
+                || (!token.IsPipe && token.Arguments.Length == 1))) {
+                throw new KarinException($"{Name}関数の引数の数が不正です。");
+            }
+            
+            var s = token.IsPipe ? pipedObj : engine.Ride(token.Arguments[0]);
+            if(!(s is string)) {
+                throw new KarinException($"構文関数'{token.Name}'を実行できません。");
+            }
+            return engine.Eval((string)s);
+        }
+    }
+
+    /// <summary>
+    /// 文字列に変数を展開する
+    /// </summary>
+    class KFunc_DEPLOY : IKarinSyntaxFunction
+    {
+        public string Name {
+            get { return "DEPLOY"; }
+        }
+
+        public bool AcceptablePipeObject {
+            get { return true; }
+        }
+
+        public object Execute(object[] args) {
+            throw new NotImplementedException();
+        }
+
+        public object Execute(KarinEngine engine, FunctionToken token, object pipedObj) {
+            if(!((token.IsPipe && token.Arguments.Length==0)
+                || (!token.IsPipe && token.Arguments.Length == 1))) {
+                throw new KarinException($"{Name}関数の引数の数が不正です。");
+            }
+            
+            var arg = token.IsPipe ? pipedObj : engine.Ride(token.Arguments[0]);
+
+            if(!(arg is string)){
+                throw new KarinException($"{Name}関数の引数が文字列ではありません。");
+            }
+
+            var s = (string)arg;
+            var sb = new StringBuilder(s.Length);
+            int pre = 0;
+            var ptn = new Regex(@"{\s*(\$\$?[^\s\$\{\}]+)\s*}");
+
+            foreach (Match m in ptn.Matches(s)) {
+                var val = engine.Eval(m.Value);
+                sb.Append(s.Substring(pre, m.Index-pre));
+                sb.Append(val);
+                pre = m.Index + m.Length;
+            }
+            sb.Append(s.Substring(pre, s.Length-pre));
+            return sb.ToString();
+        }
+    }
+    
 
     /// <summary>
     /// RETRUN関数
@@ -129,29 +277,6 @@ namespace Karin.Preset
 
         public ReturnedObject(object value) {
             this.Value = value;
-        }
-    }
-
-    /// <summary>
-    /// スクリプト化（特別関数：実装はEngine参照）
-    /// </summary>
-    class KFunc_TOSCRIPT : IKarinFunction
-    {   
-        public string Name { get { return "TOSCRIPT"; } }
-
-        public object Execute(object[] args) {
-            throw new NotImplementedException();
-        }
-    }
-    /// <summary>
-    /// スクリプト実行（特別関数：実装はEngine参照）
-    /// </summary>
-    class KFunc_DOSCRIPT : IKarinFunction
-    {
-        public string Name { get { return "DOSCRIPT"; } }
-
-        public object Execute(object[] args) {
-            throw new NotImplementedException();
         }
     }
 }

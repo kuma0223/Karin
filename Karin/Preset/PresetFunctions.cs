@@ -7,7 +7,6 @@ namespace Karin.Preset
     class PresetFunctions
     {
         public static IEnumerable<IKarinFunction> Create() {
-            //new KFunc_EXECUTIONALL();
             yield return new KFunc_ADD();
             yield return new KFunc_SUB();
             yield return new KFunc_MUL();
@@ -41,6 +40,7 @@ namespace Karin.Preset
 
             yield return new KFunc_TOSCRIPT();
             yield return new KFunc_DOSCRIPT();
+            yield return new KFunc_DEPLOY();
         }
     }
 }

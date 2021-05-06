@@ -1,5 +1,4 @@
 ﻿using Karin;
-using Kourin;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,52 +14,11 @@ namespace TestScript
         static string MyPath;
 
         static void Main(string[] args) {
+            MyPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
+            MyPath += "/../..";
 
-            var code = @"
-1+2+3
-$var = 4 + 5 + 6;
-$$str = ""abcd""
-
-$x = add[123, sub[456, 441*2]]
-
-funcs {
- $a = 123
- func2{
-   sub+1
- }
-}
-
-$a = 1
-
-if[$a==1, {
-    $a=2
-    $b=3
-}]
-
-$x
-";
-            try {
-                var ana = new Karin.TextAnalyzer(code, "script root");
-                ana.Analyze();
-                var tokens = ana.Tokens;
-                tokens = TokenUtility.ToRPN(tokens);
-
-                foreach (var t in tokens) {
-                    Console.WriteLine(t.ToString());
-                }
-
-                Console.WriteLine(new KarinEngine().Execute(code));
-
-            } catch(KarinException ex) {
-                Console.WriteLine($"{ex.Message}{Environment.NewLine}{ex.ScriptStackTrace}");
-            }
-
-            //MyPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
-            //MyPath += "/../..";
-
-            //All();
+            All();
         }
-        /*
         static void All() {
             foreach (var i in Directory.GetFiles($"{MyPath}/in")) {
                 One(Path.GetFileNameWithoutExtension(i));
@@ -87,7 +45,7 @@ $x
         }
 
         static void Exec(string code, string ret) {
-            KourinEngine eng = new KourinEngine();
+            KarinEngine eng = new KarinEngine();
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
@@ -96,12 +54,12 @@ $x
             bool ok;
 
             try {
-                ans = "" + eng.execute(code);
+                ans = "" + eng.Execute(code);
                 ok = ans == ret;
             }catch(Exception ex) {
                 ans = ex.Message;
-                if(ex is KourinException) {
-                    ans += "\r\n" + (ex as KourinException).ScriptStackTrace;
+                if(ex is KarinException) {
+                    ans += $"{Environment.NewLine}{(ex as KarinException).ScriptStackTrace}";
                 }
                 ok = false;
             }
@@ -111,14 +69,14 @@ $x
         }
 
         static void ExecNg(string code) {
-            KourinEngine eng = new KourinEngine();
+            KarinEngine eng = new KarinEngine();
             
             string ans = "";
             bool ok = false;
 
             try {
-                eng.execute(code);
-            } catch(KourinException ex) {
+                eng.Execute(code);
+            } catch(KarinException ex) {
                 ans = ex.Message;
                 ok = true;
             } catch (Exception ex) {
@@ -127,6 +85,5 @@ $x
 
             Console.WriteLine($"{(ok ? "OK" : "NG")} : {ans}");
         }
-        */
     }
 }

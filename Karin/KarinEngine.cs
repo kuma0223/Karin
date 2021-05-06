@@ -118,7 +118,7 @@ namespace Karin
         /// スクリプトを実行します。
         /// （再帰用）
         /// </summary>
-        private object Eval(string script) {
+        internal object Eval(string script) {
             var ana = new TextAnalyzer(script, "script eval");
             ana.Analyze();
 
@@ -131,6 +131,9 @@ namespace Karin
             return ret;
         }
 
+        /// <summary>
+        /// トークンを実行します。
+        /// </summary>
         internal object Ride(List<Token> tokens) {
 
             //引数が変数なら変数テーブルから値を取得
@@ -174,7 +177,7 @@ namespace Karin
                             stack.Push(CallFunction(ft, pipeobj));
                         } else {
                             stack.Push(CallFunction(ft, null));
-                        } 
+                        }
                     }
                     else if (token.Type == TokenType.Operator) {
                         //演算子
@@ -229,6 +232,7 @@ namespace Karin
                         }
                         last = stack.Any() ? getVarIf(stack.Pop()) : null;
                         stack.Clear();
+                        if(last is ReturnedObject) return last;
                     }
                 }catch(KarinException ex) {
                     if(ex.StackBlockName != token.Block) {
@@ -262,33 +266,17 @@ namespace Karin
             }
 
             var func = FunctionTable[token.Name];
-
-            if(func is KFunc_TOSCRIPT) {
-                //個別：スクリプト取得構文関数
-                var ptn = new Regex($@"{token.Name}\s{{(.*)}}");
-                var mc = ptn.Match(token.Text);
-                return mc.Groups[1].Value;
-            }
-            else if(func is KFunc_DOSCRIPT) {
-                //個別：スクリプト文字列実行関数
-                var s = token.IsPipe ? pipedObj : Ride(token.Arguments[0]);
-                if(!(s is string)) {
-                    throw new KarinException($"構文関数'{token.Name}'を実行できません。");
-                }
-                return Eval((string)s);
-            }
-            else if (func is IKarinSyntaxFunction) {
+            
+            if (func is IKarinSyntaxFunction) {
                 //構文関数
-                //引数を演算しない
-                if (token.IsPipe) {
+                var fu = (func as IKarinSyntaxFunction);
+                if (!fu.AcceptablePipeObject && token.IsPipe) {
                     throw new KarinException($"構文関数'{token.Name}'をパイプできません。");
                 }
-                var ret = (func as IKarinSyntaxFunction)
-                    .Execute(this, token.Arguments);
-
-                return ret;
+                return fu.Execute(this, token, pipedObj);
             }
             else {
+                //通常の関数
                 //引数を先に算出
                 var args = token.Arguments;
                 var pic = token.IsPipe ? 1 : 0;

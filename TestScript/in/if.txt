@@ -2,19 +2,19 @@
 
 if[$a == 1,{
 },{
-	return["x"]
+	return["x1"]
 }]
 
 if[$a == 2,{
-	return["x"]
+	return["x2"]
 }]
 
 if[$a == 1,{
 	if["aiueo" == "kakikukeko",{
-		return["x"]
+		return["x3"]
 	}]
 },{
-	return["x"]
+	return["x4"]
 }]
 
 if[false,{
@@ -26,4 +26,4 @@ if[false,{
 	}]
 }]
 
-return["x"]
+return["x5"]

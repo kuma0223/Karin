@@ -22,20 +22,6 @@ namespace Karin
     }
 
     /// <summary>
-    /// 制御構文関数インタフェース
-    /// </summary>
-    interface IKarinSyntaxFunction : IKarinFunction
-    {
-        /// <summary>
-        /// 関数を呼び出し結果を返します。
-        /// </summary>
-        /// <param name="karin">実行エンジン</param>
-        /// <param name="args">引数</param>
-        /// <returns>結果値</returns>
-        object Execute(KarinEngine engine, List<Token>[] args);
-    }
-
-    /// <summary>
     /// 簡易IKarinFunction実装クラス
     /// </summary>
     public class KarinFunction : IKarinFunction

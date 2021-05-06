@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Karin
 {
-    public class TextAnalyzer
+    class TextAnalyzer
     {
         public string BlockName{
             private set;
@@ -131,14 +131,14 @@ namespace Karin
         private bool IsVariableName(char c) {
             return ('a' <= c && c <= 'z')
                 || ('A' <= c && c <= 'Z')
-                || ('1' <= c && c <= '9')
+                || ('0' <= c && c <= '9')
                 || c == '_' || c == '.';
         }
 
         private bool IsFunctionName(char c) {
             return ('a' <= c && c <= 'z')
                 || ('A' <= c && c <= 'Z')
-                || ('1' <= c && c <= '9')
+                || ('0' <= c && c <= '9')
                 || c == '_' || c == '.';
         }
 
@@ -167,12 +167,13 @@ namespace Karin
         //取り出し-ヒアドキュメント
         private Token _ANA_HereDocument() {
             int i = position;
-            var yes = At(i)=='$' && At(i+1)=='"' && IsBreak(At(i+2));
+            var yes = At(i)=='$' && At(i+1)=='"';
             if(!yes) return null;
 
-            line++;            
-            i += 3;
-            if(IsLFofCRLF(i+1)) i++;
+            while(!IsBreak(At(i))) i++;
+            i++;
+            if(IsLFofCRLF(i)) i++;
+            line++;
             
             var sb = new StringBuilder();
             while (true) {
@@ -181,6 +182,9 @@ namespace Karin
                     throw new KarinException("ヒアドキュメントが閉じられていません。");
                 } else if(IsBreak(c) && At(i+1)=='"' && At(i+2)=='$'){
                     i+=3;
+                    break;
+                } else if(IsBreak(c) && IsLFofCRLF(i+1) && At(i+2)=='"' && At(i+3)=='$'){
+                    i+=4;
                     break;
                 } else{
                     sb.Append(c);
