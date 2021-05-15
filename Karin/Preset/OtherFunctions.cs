@@ -82,6 +82,41 @@ namespace Karin.Preset
     }
 
     /// <summary>
+    /// 整数変換(64)
+    /// </summary>
+    class KFunc_LONG : IKarinFunction
+    {
+        public string Name { get { return "LONG"; } }
+
+        public object Execute(object[] args) {
+            if (args.Length < 1) {
+                return 0;
+            }
+
+            object obj = args[0];
+            try {
+                if (obj is string) {
+                    var s = (string)obj;
+                    if (s.StartsWith("0x")) {
+                        return Convert.ToInt64(s.Substring(2), 16);
+                    } else {
+                        return Convert.ToInt64(s);
+                    }
+                } else if (obj is double) {
+                    return (long)(double)obj;
+                } else if (obj is float) {
+                    return (long)(float)obj;
+                } else if (obj is int) {
+                    return (long)(int)obj;
+                }
+                return Convert.ToInt64(args[0]);
+            } catch (FormatException) {
+                throw new KarinException($"'{obj}'を整数へ変換できません。");
+            }
+        }
+    }
+
+    /// <summary>
     /// 実数変換
     /// </summary>
     class KFunc_DOUBLE : IKarinFunction

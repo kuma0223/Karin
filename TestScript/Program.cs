@@ -46,6 +46,10 @@ namespace TestScript
 
         static void Exec(string code, string ret) {
             KarinEngine eng = new KarinEngine();
+            eng.SetFunction(new KarinFunction("console", args=>{
+                Console.WriteLine(args[0].ToString());
+                return null;
+            }));
 
             Stopwatch sw = new Stopwatch();
             sw.Start();

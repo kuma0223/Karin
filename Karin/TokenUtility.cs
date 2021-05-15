@@ -6,6 +6,79 @@ namespace Karin
 {
     public class TokenUtility
     {
+
+        /// <summary>
+        /// 字句解析後チェック
+        /// </summary>
+        public static void Check(List<Token> tokens) {
+            var isOperand = new Func<Token, bool>(t => {
+                return t.Type == TokenType.String
+                    || t.Type == TokenType.Number
+                    || t.Type == TokenType.Function
+                    || t.Type == TokenType.Variable;
+            });
+
+            int perCount = 0;
+            int line = 0;
+            string block = "";
+
+            try {
+                for (var i = 0; i < tokens.Count; i++) {
+                    Token t = tokens[i];
+                    line = t.Line;
+                    block = t.Block;
+
+                    if (t.Type == TokenType.Operator) {
+                        if (i == 0 || i == tokens.Count - 1) {
+                            throw new KarinException($"演算子の位置が不正です。'{t.Text}'");
+                        } else if (tokens[i - 1].Type == TokenType.LParen) {
+                            throw new KarinException($"演算子の位置が不正です。'{t.Text}'");
+                        } else if (tokens[i - 1].Type == TokenType.Operator) {
+                            throw new KarinException($"演算子が連続しています。'{t.Text}'");
+                        }
+                    } else if (t.Type == TokenType.Function && (t as FunctionToken).IsPipe) {
+                        if (i == 0 || !(tokens[i - 1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
+                            throw new KarinException($"関数パイプの位置が不正です。'{t.Text}'");
+                        }
+                    } else if (isOperand(t)) {
+                        if (i > 0 && (tokens[i - 1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
+                            throw new KarinException($"被演算子が連続しています。'{t.Text}'");
+                        }
+                    } else if (t.Type == TokenType.LParen) {
+                        perCount++;
+                        if (i > 0 && (tokens[i - 1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
+                            throw new KarinException($"被演算子が連続しています。'{t.Text}'");
+                        }
+                    } else if (t.Type == TokenType.RParen) {
+                        perCount--;
+                        if (i > 0 && tokens[i - 1].Type == TokenType.LParen) {
+                            throw new KarinException("空の()です。");
+                        }
+                    } else if (t.Type == TokenType.Function) {
+                        var token = t as FunctionToken;
+                        foreach (var arg in token.Arguments) {
+                            Check(arg);
+                        }
+                    } else if (t.Type == TokenType.ScriptBlockToken) {
+                        var token = t as ScriptBlockToken;
+                        Check(token.SubTokens);
+                    } else if (t.Type == TokenType.ScriptFunction) {
+                        var token = t as ScriptFunctionToken;
+                        Check(token.SubTokens);
+                    }
+                }
+
+                if (perCount != 0) {
+                    throw new KarinException("()の対応がとれていません。");
+                }
+            } catch (KarinException ex) {
+                if (ex.StackBlockName != block) {
+                    ex.AddStackTrace(line, block);
+                }
+                throw;
+            }
+        }
+
         /// <summary>
         /// 逆ポーランド記法変換
         /// </summary>
@@ -76,84 +149,5 @@ namespace Karin
             return ret;
         }
         
-        /// <summary>
-        /// 字句解析後チェック
-        /// </summary>
-        public static void Check(List<Token> tokens)
-        {
-            var isOperand = new Func<Token,bool>(t => {
-                return t.Type == TokenType.String
-                    || t.Type == TokenType.Number
-                    || t.Type == TokenType.Function
-                    || t.Type == TokenType.Variable;
-            });
-
-            int perCount = 0;
-            int line = 0;
-            string block = "";
-
-            try { 
-                for (var i = 0; i < tokens.Count; i++) {
-                    Token t = tokens[i];
-                    line = t.Line;
-                    block = t.Block;
-
-                    if (t.Type == TokenType.Operator) {
-                        if (i == 0 || i == tokens.Count - 1) {
-                            throw new KarinException($"演算子の位置が不正です。'{t.Text}'");
-                        } else if (tokens[i - 1].Type == TokenType.LParen) {
-                            throw new KarinException($"演算子の位置が不正です。'{t.Text}'");
-                        } else if (tokens[i - 1].Type == TokenType.Operator) {
-                            throw new KarinException($"演算子が連続しています。'{t.Text}'");
-                        }
-                    }
-                    else if(t.Type == TokenType.Function && (t as FunctionToken).IsPipe) {
-                        if(i == 0 || !(tokens[i-1].Type == TokenType.RParen || isOperand(tokens[i - 1]))){
-                            throw new KarinException($"関数パイプの位置が不正です。'{t.Text}'");
-                        }
-                    }
-                    else if(isOperand(t)) {
-                        if (i > 0 && (tokens[i-1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
-                            throw new KarinException($"被演算子が連続しています。'{t.Text}'");
-                        }
-                    }
-                    else if (t.Type == TokenType.LParen){
-                        perCount++;
-                        if (i> 0 && (tokens[i-1].Type == TokenType.RParen || isOperand(tokens[i - 1]))) {
-                            throw new KarinException($"被演算子が連続しています。'{t.Text}'");
-                        }
-                    }
-                    else if (t.Type == TokenType.RParen){
-                        perCount--;
-                        if (i > 0 && tokens[i-1].Type == TokenType.LParen) {
-                            throw new KarinException("空の()です。");
-                        }
-                    }
-                    else if(t.Type == TokenType.Function) {
-                        var token = t as FunctionToken;
-                        foreach(var arg in token.Arguments) {
-                            Check(arg);
-                        }
-                    }
-                    else if(t.Type == TokenType.ScriptBlockToken) {
-                        var token = t as ScriptBlockToken;
-                        Check(token.SubTokens);
-                    }
-                    else if(t.Type == TokenType.ScriptFunction) {
-                        var token = t as ScriptFunctionToken;
-                        Check(token.SubTokens);
-                    }
-                }
-
-                if(perCount != 0) {
-                    throw new KarinException("()の対応がとれていません。");
-                }
-            } catch(KarinException ex) {
-                if(ex.StackBlockName != block) {
-                    ex.AddStackTrace(line, block);
-                }
-                throw;
-            }
-        }
     }
 }

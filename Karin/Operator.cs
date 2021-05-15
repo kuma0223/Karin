@@ -11,7 +11,7 @@ namespace Karin
         public int Priority;
         public string Function;
 
-        private static char[] Marks = { '+', '-', '*', '/', '%', '|', '&', '=', '!', '>', '<', /*';'*/ };
+        private static char[] Marks = { '+', '-', '*', '/', '%', '|', '&', '=', '!', '>', '<' };
         private static HashSet<char> MarkSet = new HashSet<char>(Marks);
 
         public static Operator[] Operators = {
@@ -34,10 +34,6 @@ namespace Karin
             new Operator(){ Mark="||", Priority=0, Function="OR"},
                                                  
             new Operator(){ Mark="=", Priority=-1},
-
-            //;は直列実行演算子。左辺, 右辺と評価され、右辺の値を結果値として返す。
-            //全ての演算子より優先度が低いが、括弧()よりは先に判定される。
-            //new Operator(){ Mark=";", Priority=-99, Function=PresetFunctions.executionAll.name}
         };
 
         public static Operator Parse(string str)

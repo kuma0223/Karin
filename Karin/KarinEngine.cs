@@ -24,7 +24,7 @@ namespace Karin
         /// <summary>
         /// 変数テーブル（グローバル）
         /// </summary>
-        public Dictionary<string, object> Variables = new Dictionary<string, object>();
+        private Dictionary<string, object> Variables = new Dictionary<string, object>();
 
         /// <summary>
         /// 変数テーブル（スコープ）
@@ -61,6 +61,25 @@ namespace Karin
         public void RemoveFunction(string name) {
             if (FunctionTable.ContainsKey(name))
                 FunctionTable.Remove(name);
+        }
+
+        /// <summary>
+        /// グローバル変数を設定します。
+        /// </summary>
+        /// <param name="name">変数名($無し)</param>
+        /// <param name="value">値</param>
+        public void SetVariable(string name, object value) {
+            Variables[name] = value;
+        }
+
+        /// <summary>
+        /// グローバル変数を取得します。
+        /// </summary>
+        /// <param name="name">変数名($無し)</param>
+        /// <returns>値/未定義の場合はnull</returns>
+        public object GetVariable(string name) {
+            if(!Variables.ContainsKey(name)) return null;
+            return Variables[name];
         }
 
         /// <summary>
@@ -156,6 +175,12 @@ namespace Karin
 
             //計算実行
             foreach (var token in tokens) {
+                if (StopFlag) {
+                    var ae = new KarinAbortException($"停止要求によりスクリプトを中断しました。");
+                    ae.AddStackTrace(token.Line, token.Block);
+                    throw ae;
+                }
+
                 try { 
                     if (token.Type == TokenType.Number) {
                         //数値リテラル
@@ -240,8 +265,8 @@ namespace Karin
                     }
                     throw;
                 }catch(Exception ex) {
-                    var e = new KarinException($"実行時エラー({ex.GetType().Name})"
-                        , ex, token.Line, token.Block);
+                    var e = new KarinException($"実行時エラー({ex.GetType().Name})", ex);
+                    e.AddStackTrace(token.Line, token.Block);
                     throw e;
                 }
             }
@@ -270,7 +295,7 @@ namespace Karin
             if (func is IKarinSyntaxFunction) {
                 //構文関数
                 var fu = (func as IKarinSyntaxFunction);
-                if (!fu.AcceptablePipeObject && token.IsPipe) {
+                if (!fu.PipeAcceptable && token.IsPipe) {
                     throw new KarinException($"構文関数'{token.Name}'をパイプできません。");
                 }
                 return fu.Execute(this, token, pipedObj);

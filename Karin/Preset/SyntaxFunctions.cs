@@ -11,6 +11,11 @@ namespace Karin.Preset
     interface IKarinSyntaxFunction : IKarinFunction
     {
         /// <summary>
+        /// パイプ呼び出しが可能か否かを返します。
+        /// </summary>
+        bool PipeAcceptable { get; }
+
+        /// <summary>
         /// 関数を呼び出し結果を返します。
         /// </summary>
         /// <param name="karin">実行エンジン</param>
@@ -19,10 +24,6 @@ namespace Karin.Preset
         /// <returns>結果値</returns>
         object Execute(KarinEngine engine, FunctionToken token, object pipedObj);
 
-        /// <summary>
-        /// パイプ呼び出しが可能か否かを返します。
-        /// </summary>
-        bool AcceptablePipeObject { get; }
     }
 
     /// <summary>
@@ -34,7 +35,7 @@ namespace Karin.Preset
             get { return "IF"; }
         }
 
-        public bool AcceptablePipeObject {
+        public bool PipeAcceptable {
             get { return false; }
         }
 
@@ -74,7 +75,7 @@ namespace Karin.Preset
             get { return "REPEAT"; }
         }
 
-        public bool AcceptablePipeObject {
+        public bool PipeAcceptable {
             get { return false; }
         }
 
@@ -110,7 +111,7 @@ namespace Karin.Preset
             get { return "WHILE"; }
         }
 
-        public bool AcceptablePipeObject {
+        public bool PipeAcceptable {
             get { return false; }
         }
 
@@ -151,7 +152,7 @@ namespace Karin.Preset
             get { return "TOSCRIPT"; }
         }
 
-        public bool AcceptablePipeObject {
+        public bool PipeAcceptable {
             get { return false; }
         }
 
@@ -164,7 +165,7 @@ namespace Karin.Preset
                 throw new KarinException($"{Name}関数の引数の数が不正です。");
             }
 
-            var ptn = new System.Text.RegularExpressions.Regex($@"{token.Name}\s*\[(.*)\]");
+            var ptn = new System.Text.RegularExpressions.Regex($@"{token.Name}\s*\[([\s\S]*)\]");
             var mc = ptn.Match(token.Text);
             return mc.Groups[1].Value;
         }
@@ -178,7 +179,7 @@ namespace Karin.Preset
             get { return "DOSCRIPT"; }
         }
 
-        public bool AcceptablePipeObject {
+        public bool PipeAcceptable {
             get { return true; }
         }
 
@@ -209,7 +210,7 @@ namespace Karin.Preset
             get { return "DEPLOY"; }
         }
 
-        public bool AcceptablePipeObject {
+        public bool PipeAcceptable {
             get { return true; }
         }
 

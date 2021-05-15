@@ -18,22 +18,13 @@ namespace Karin
         /// </summary>
         internal string StackBlockName = null;
 
-        public KarinException(string message, Exception ex, int line, string block) : base(message, ex)
+        public KarinException(string message, Exception ex) : base(message, ex)
         {
-            if(line > 0) {            
-                AddStackTrace(line, block);
-            }
         }
-        
-        public KarinException(string message, Exception ex)
-            : this(message, ex, 0, null)
-        { }
-        public KarinException(string message)
-            : this(message, null)
-        { }
-        //public KarinException(string message, int line, string block)
-        //    : this(message, null, line, block)
-        //{ }
+
+        public KarinException(string message) : this(message, null)
+        {
+        }
 
         internal void AddStackTrace(int line, string block)
         {

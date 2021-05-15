@@ -72,14 +72,11 @@
       <Project>{8fa1cdf4-f6c2-4415-a096-59faed5b7516}</Project>
       <Name>Karin</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Kourin\Kourin.csproj">
-      <Project>{2cbd6dbd-d5d4-439c-a0c5-ae063715f6db}</Project>
-      <Name>Kourin</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="in\funcNg.txt" />
     <Content Include="in\func.txt" />
+    <Content Include="in\toScript.txt" />
     <Content Include="in\stringNg2.txt" />
     <Content Include="in\stringNg.txt" />
     <Content Include="in\string3.txt" />
@@ -95,6 +92,7 @@
     <Content Include="out\string3.txt" />
     <Content Include="out\string2.txt" />
     <Content Include="out\string.txt" />
+    <Content Include="out\toScript.txt" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
