@@ -66,7 +66,7 @@ namespace Karin
         }
         public object Execute(object[] args)
         {
-            throw new KarinException("Mostn't call script function direct");
+            throw new KarinException("Can't call script function direct.");
         }
     }
 }

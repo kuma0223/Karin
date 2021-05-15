@@ -48,6 +48,28 @@ namespace Karin
         }
 
         /// <summary>
+        /// DLLのパスを指定してプラグイン関数を読み込みます。
+        /// keyを指定すると該当するKeyNameを持つプラグインのみを読み込みます。
+        /// </summary>
+        /// <param name="path">DLLパス</param>
+        /// <param name="key">キー</param>
+        public void LoadPluginDll(string path, string key = null) {
+            var asm = System.Reflection.Assembly.LoadFrom(path);
+
+            foreach (var t in asm.GetTypes()) {
+                if (t.IsAbstract || t.IsInterface) continue;
+                if (!t.GetInterfaces().Contains(typeof(IPluginFunctionFactory))) continue;
+
+                var fac = System.Activator.CreateInstance(t) as IPluginFunctionFactory;
+                if (fac != null && (key == null || fac.KeyName == key)) {
+                    foreach(var x in fac.GetPluginFunctions()){
+                        SetFunction(x);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// 拡張関数を設定します。
         /// </summary>
         public void SetFunction(IKarinFunction function) {
