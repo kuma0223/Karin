@@ -6,7 +6,6 @@ namespace Karin
 {
     public class TokenUtility
     {
-
         /// <summary>
         /// 字句解析後チェック
         /// </summary>

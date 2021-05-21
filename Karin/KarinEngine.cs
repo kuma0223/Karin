@@ -317,7 +317,7 @@ namespace Karin
             if (func is IKarinSyntaxFunction) {
                 //構文関数
                 var fu = (func as IKarinSyntaxFunction);
-                if (!fu.PipeAcceptable && token.IsPipe) {
+                if (!fu.CanPipe && token.IsPipe) {
                     throw new KarinException($"構文関数'{token.Name}'をパイプできません。");
                 }
                 return fu.Execute(this, token, pipedObj);

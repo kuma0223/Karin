@@ -11,19 +11,18 @@ namespace Karin.Preset
     interface IKarinSyntaxFunction : IKarinFunction
     {
         /// <summary>
-        /// パイプ呼び出しが可能か否かを返します。
+        /// パイプ呼び出しの可不可。
         /// </summary>
-        bool PipeAcceptable { get; }
+        bool CanPipe { get; }
 
         /// <summary>
         /// 関数を呼び出し結果を返します。
         /// </summary>
-        /// <param name="karin">実行エンジン</param>
+        /// <param name="engine">実行エンジン</param>
         /// <param name="token">トークン</param>
         /// <param name="pipedObj">パイプオブジェクト</param>
         /// <returns>結果値</returns>
         object Execute(KarinEngine engine, FunctionToken token, object pipedObj);
-
     }
 
     /// <summary>
@@ -35,7 +34,7 @@ namespace Karin.Preset
             get { return "IF"; }
         }
 
-        public bool PipeAcceptable {
+        public bool CanPipe {
             get { return false; }
         }
 
@@ -75,7 +74,7 @@ namespace Karin.Preset
             get { return "REPEAT"; }
         }
 
-        public bool PipeAcceptable {
+        public bool CanPipe {
             get { return false; }
         }
 
@@ -111,7 +110,7 @@ namespace Karin.Preset
             get { return "WHILE"; }
         }
 
-        public bool PipeAcceptable {
+        public bool CanPipe {
             get { return false; }
         }
 
@@ -152,7 +151,7 @@ namespace Karin.Preset
             get { return "TOSCRIPT"; }
         }
 
-        public bool PipeAcceptable {
+        public bool CanPipe {
             get { return false; }
         }
 
@@ -170,6 +169,7 @@ namespace Karin.Preset
             return mc.Groups[1].Value;
         }
     }
+
     /// <summary>
     /// スクリプト実行
     /// </summary>
@@ -179,7 +179,7 @@ namespace Karin.Preset
             get { return "DOSCRIPT"; }
         }
 
-        public bool PipeAcceptable {
+        public bool CanPipe {
             get { return true; }
         }
 
@@ -210,7 +210,7 @@ namespace Karin.Preset
             get { return "DEPLOY"; }
         }
 
-        public bool PipeAcceptable {
+        public bool CanPipe {
             get { return true; }
         }
 

@@ -46,10 +46,6 @@ namespace Karin
                     throw new KarinException("不明なトークンの出現です。");
                 }
             }
-
-            //if(tokens.Any() && tokens.Last().Type != TokenType.End) {
-            //    tokens.Add(new Token(TokenType.End, "", BlockName, line));
-            //}
         }
 
         //--------------------
