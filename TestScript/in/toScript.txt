@@ -1,0 +1,9 @@
+﻿$scr = toscRipt[
+	$a=1 + 2 + 3
+	repeat[3, {
+		$a = $a & "r"
+	}]
+	$a
+]
+
+doscript[$scr]
