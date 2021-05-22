@@ -3,7 +3,7 @@
 namespace Karin
 {
     /// <summary>
-    /// 関数プラグインインタフェース
+    /// 関数プラグイン生成インタフェース
     /// </summary>
     public interface IPluginFunctionFactory
     {
